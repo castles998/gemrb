@@ -176,6 +176,53 @@ Gate: load one identified supported game, display its menu, enter gameplay, veri
 touch input and audio, save/load, and background/resume without losing saves or
 crashing. Test on a physical device; emulator success alone is insufficient.
 
+Setup findings (2026-10-03, classic GOG BG2 on AYN Thor): copying through Windows
+Explorer/MTP took approximately 20 minutes, and the resulting game subdirectories
+were inaccessible to both the app and adb/run-as (permission denied). Top-level
+`chitin.key` and `dialog.tlk` were readable, so checking only those files did not
+establish a usable installation. Full engine startup then aborted with Android's
+`FORTIFY: readdir: null DIR*` while initializing search paths. Investigate and
+fix that unchecked directory-open failure separately; inaccessible game data
+must produce an actionable error, not terminate the process. The exact cause of
+the MTP ownership/access behavior is not established. An adb-created staging
+directory is readable by the app. Replacement transfer passed: all 1,836 files
+(approximately 2.67 GB) matched the Windows source by size and SHA-256, with
+device hashing performed as the app account. Original MTP data and saves were
+preserved, and GamePath now points to the separate verified staging copy.
+Bulk adb directory creation also encountered `remote secure_mkdirs failed`;
+pre-creating the entire destination directory tree before pushing its individual
+top-level directories succeeded. The largest directory (2.49 GB) transferred in
+approximately 103 seconds. This is evidence for a developer workaround, not a
+portable end-user setup procedure.
+
+Fresh device logcat confirms `Core Initialization Complete!`, loading the BG2
+Start GUI script, OpenAL initialization and resource reads from `chitin.key`.
+A device screenshot shows the rendered BioWare intro movie. Menu/gameplay,
+audible sound, controls, save/load and lifecycle acceptance remain unverified;
+milestone 4 is not complete. The source copy included a Windows `GemRB.log`, so
+do not mistake that copied file for fresh Android startup evidence: use logcat.
+
+The current setup experience is unacceptable: slow copying, hand-editing a config
+through MTP, and discovering access problems only at launch are not a supported
+end-user workflow. Prioritize a guided setup procedure before calling this port
+usable:
+
+- Let users place BG2 in a friendly shared folder, then choose its location with
+  a quick game-location picker. Do not require browsing `Android/data` or editing
+  `GemRB.cfg` manually.
+- Resolve the selected location through Android's supported storage APIs. A
+  document-provider URI cannot simply become `GamePath`; import to engine-readable
+  storage where necessary, retaining access grants for future imports.
+- Detect the game and configure GamePath/GameType and any required data/CD paths
+  automatically; keep saves separate and preserve existing config and saves.
+- Check actual app-context directory traversal and file reads, key/TLK signatures,
+  and every KEY-referenced archive before offering Start. Handle filename case
+  without making users rename files themselves.
+- Show required/free space, progress, retry/cancel support and a useful validation
+  report. Avoid another full copy on every launch/update or after a partial failure.
+- Provide a documented adb developer fallback, but do not make adb a prerequisite
+  for players. Never delete the original game copy or existing saves implicitly.
+
 ### 5. Developer workflow and hardening
 
 Add VS Code tasks for configure, assemble, install and logcat. Document clean
