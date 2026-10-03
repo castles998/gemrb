@@ -130,6 +130,11 @@ ENDIF(APPLE)
 target_compile_definitions(gemrb PRIVATE _USE_MATH_DEFINES)
 
 # we need to add gemrb target before processing plugins or COCOA plugins don't work right.
+IF(ANDROID AND STATIC_LINK)
+  # Android port: rebuild the cached plugin list on reconfigure, not append it.
+  # Duplicate whole-archive entries otherwise cause duplicate-symbol failures.
+  SET(plugins "" CACHE INTERNAL "Static plugin targets" FORCE)
+ENDIF()
 ADD_SUBDIRECTORY( plugins )
 
 # create a compilable icon from a bmp

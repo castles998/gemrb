@@ -113,7 +113,9 @@ New engine/SDL/OpenAL/iconv libraries have 16 KB LOAD alignment; prebuilt Python
 still has 4 KB alignment. Runtime plugin registration remains an APK startup
 test, not proven by symbol retention alone. `inspect-native.ps1` repeats ABI,
 dependency and export checks. No shared engine C++ changes were required: shared
-CMake changes are tagged and guarded with `if(ANDROID)`; the obsolete Android
+CMake changes are tagged and guarded with `if(ANDROID)`; repeated configuration
+also resets the cached static-plugin list to avoid duplicate whole-archive entries.
+The obsolete Android
 entry/logger were repaired in the platform directory. Windows ALL_BUILD succeeded
 and all seven CTest suites passed after the shared target changes. Optional PNG,
 FreeType, Vorbis, SDL_mixer and VLC remain disabled in this initial Android build.

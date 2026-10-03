@@ -53,8 +53,10 @@ CTest suites passed. x86_64 is supported by the build script but has not yet
 been validated for the full engine.
 
 Shared changes are limited to `if(ANDROID)` entry-target/link settings in
-`gemrb/CMakeLists.txt`. The Android-only entry/logger use current logging APIs,
-remove obsolete SDL1 callbacks and external-storage assumptions, and run current
+`gemrb/CMakeLists.txt`, plus resetting the static-plugin target cache on Android
+reconfigure to prevent duplicated whole-archive entries. The Android-only
+entry/logger use current logging APIs, remove obsolete SDL1 callbacks and
+external-storage assumptions, and run current
 plugin cleanup. The launcher must supply explicit config and Python paths in
 milestone 3 before engine initialization; no game data is bundled.
 
