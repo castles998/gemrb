@@ -43,8 +43,7 @@ To run, extract the matching ABI's `src/main/assets/stdlib/pythonhome.*.zip` to 
 Python home directory. Stage that home, `libs/<ABI>/*.so`, and the probe in a
 dedicated device test directory. Set `LD_LIBRARY_PATH` to the staged library
 directory and invoke `gemrb_python_probe <python-home>`. Require exit code zero
-and `ANDROID_PYTHON_PROBE_OK`. Device paths and results will be recorded after
-toolchain installation and a connected device are available.
+and `ANDROID_PYTHON_PROBE_OK`.
 
 Before adopting this archive for the final APK, inspect its transitive library
 dependencies, license inventory and ELF segment alignment. Old prebuilt native
@@ -53,5 +52,10 @@ libraries may require rebuilding to meet newer Android page-size requirements.
 Verified on 2026-10-03: the probe compiles and links for arm64-v8a and x86_64
 using NDK r27d (27.3.13750724), Clang 18.0.4 and host CMake 4.4.3. The Python
 arm64 library depends directly on Android's libdl, libm and libc and has SONAME
-`libpython3.10.so`. Its LOAD segments have 0x1000 (4 KB) alignment. Device runtime
-imports have not been tested yet; no authorized device was attached at setup.
+`libpython3.10.so`. Its LOAD segments have 0x1000 (4 KB) alignment.
+
+The user subsequently ran `run-probe.ps1` successfully on a physical arm64-v8a
+device running Android API 33 with 4096-byte pages. Output included
+`ANDROID_PYTHON_PROBE_OK 3.10.5` and the runner's verification message. This
+confirms initialization, all probe imports and assertions, and clean exit for
+that device. It does not validate 16 KB devices, GemRB bindings or APK packaging.

@@ -1,6 +1,7 @@
 # Modern Android port plan
 
-Status: milestone 1 in progress; no modern Android build or APK has been produced yet.
+Status: milestone 1 Python feasibility gate passed on a physical device. Native
+engine cross-build and APK packaging remain pending.
 Baseline: GemRB master at `5552ade1d`. The existing Windows build lives in
 `build/windows-vs2022`.
 
@@ -67,7 +68,13 @@ and links for arm64-v8a and x86_64. SDK license acceptance was explicitly suppli
 by the user and recorded by sdkmanager. Installed locally: Temurin JDK
 17.0.20.1+1, SDK command-line tools 12.0, platform android-35, build-tools 35.0.0,
 NDK r27d (27.3.13750724), and platform-tools. Host CMake is 4.4.3; Ninja is 1.13.2.
-Device imports remain pending because no device is connected. The prebuilt
+User-reported device validation passed: arm64-v8a, Android API 33, 4096-byte pages,
+with `ANDROID_PYTHON_PROBE_OK` and runtime Python 3.10.5. The probe initializes
+the interpreter and imports encodings, json, math, struct, zlib, ctypes, ssl and
+sqlite3; its JSON, struct and zlib assertions passed. This validates the isolated
+embedding approach, not GemRB GUI bindings or APK runtime loading. Gradle wrapper
+selection and complete dependency license inventory remain packaging tasks;
+they are not established by this probe. The prebuilt
 Python ARM64 ELF uses 4 KB alignment; rebuild it for 16 KB device support before
 adopting it for those devices. WSL is
 not installed; no Linux host is currently required by this prebuilt approach.
