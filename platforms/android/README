@@ -1,4 +1,13 @@
-BUILDING GEMRB FOR ANDROID
+MODERN ADDITION PORT
+--------------------
+For the current CMake/SDL2/Python 3.10.5 debug APK, see APK_BUILD.md.
+Build from the repository root with ./platforms/android/build-apk.ps1.
+PORTING_PLAN.md records device validation and remaining milestones.
+
+The historical Ant/ndk-build instructions below are retained for reference;
+they are not the supported workflow for the modern addition port.
+
+BUILDING GEMRB FOR ANDROID (HISTORICAL)
 --------------------------
 
 Tools you will need to build GemRB for Android:
@@ -98,4 +107,3 @@ location on your device:
 
 Assuming you followed all these steps correctly, you should be able to run the
 app from your device's main menu and the game should start correctly.
-

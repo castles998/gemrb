@@ -1,7 +1,8 @@
 # Modern Android port plan
 
-Status: milestones 1 and 2 passed: Python device probe and ARM64 native engine
-cross-build. APK packaging and engine device startup remain pending.
+Status: milestones 1 and 2 passed. Milestone 3 debug APK builds and its SDL/Python
+runtime diagnostic passed on the physical ARM64 device. Game-dependent engine/GUI
+initialization and playable testing remain milestone 4 work.
 Baseline: GemRB master at `5552ade1d`. The existing Windows build lives in
 `build/windows-vs2022`.
 
@@ -133,6 +134,36 @@ Gate: a debug APK builds from documented commands, installs, starts SDL, initial
 Python, imports GemRB/GUI modules and produces useful logcat output. Missing game
 data yields an actionable message instead of an unexplained startup crash.
 
+Progress (2026-10-03): added `platforms/android/apk`, pinned Gradle 8.9 wrapper,
+AGP 8.7.3, JDK 17/SDK 35 integration, matching SDL2 2.32.10 Java glue, ARM64 native
+libraries and 56 Python extensions. `build-apk.ps1` stages deterministic assets,
+runs asset tests and assembles the debug APK; `run-apk.ps1` installs and validates
+a fresh device report. Versioned asset extraction preserves config/game/save
+directories, validates paths, and uses installed native-library symlinks for
+Python extensions. Links are refreshed across APK updates; code is not extracted
+into writable Python-home files. Python/engine paths are set before initialization.
+
+The physical AYN Thor (arm64-v8a, API 33, 4096-byte pages) produced
+`ANDROID_APK_RUNTIME_OK`: SDL renderer/window creation, Python 3.10.5 native
+extension imports, GemRB/_GemRB and GUIDefines/MetaClasses imports passed. The
+static registry reports 28 class plugins (distinct from the 41 linked plugin
+archives, which also contain drivers/resources). The first attempt paused while
+the device slept; waking it allowed the diagnostic to run. This diagnostic
+deliberately does not initialize Interface or import GUIClasses/GameCheck without
+game data. Those, audio playback and gameplay remain untested. Three host unit
+tests cover traversal rejection, extraction retries/user-file preservation and
+missing extension rejection. Desktop CTest suites still all pass.
+Repeat APK installation/startup also passed: the extraction marker timestamp and
+user config checksum were unchanged, `ANDROID_ASSETS_REUSED` was logged, and
+native extension imports passed after Android moved the installed library directory.
+A missing-game launch produced `ANDROID_GAME_DATA_MISSING`; the device UI tree
+confirmed the actionable "Game data missing" dialog. A tool-environment debug
+key mismatch was resolved by pinning a local ignored debug keystore, without
+uninstalling or erasing app data. APK signature and ARM64/API 26/target 35 metadata
+were verified. Python remains
+4 KB aligned. Primary license files are bundled; complete BeeWare transitive
+provenance/notices audit remains required before public release. See `APK_BUILD.md`.
+
 ### 4. Game data and playable validation
 
 First use a user-supplied supported game in app-accessible storage to validate the
@@ -180,9 +211,9 @@ registration and dependency loading can fail at runtime even after linking.
 Lifecycle, input and audio require device validation. This is multi-stage work;
 a credible time estimate follows the first Python and engine cross-build probes.
 
-Next implementation step: milestone 3, package the native engine with matching
-SDL Java glue and explicit Python/config/assets paths. Do not declare playable
-success based on compilation or a scaffold APK.
+Next implementation step: milestone 4, select and stage a supported game and
+validate full Interface/GUI startup, input, audio, saves and lifecycle. Do not
+declare playable success based on compilation or the APK runtime diagnostic.
 
 ## Primary references
 
