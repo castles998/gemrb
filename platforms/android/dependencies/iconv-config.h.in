@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* Android library-only configuration, not for GNU command-line tools. */
+#define ENABLE_EXTRA 1
+#define ICONV_CONST
+#cmakedefine01 HAVE_WCRTOMB
+#cmakedefine01 HAVE_MBRTOWC
+#cmakedefine01 HAVE_MBSINIT
+#cmakedefine01 HAVE_LANGINFO_CODESET

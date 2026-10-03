@@ -24,8 +24,10 @@ void AndroidLogger::WriteLogMessage(const Logger::LogMessage& msg)
 		case DEBUG:
 			priority = ANDROID_LOG_DEBUG;
 			break;
+		default:
+			break;
 	}
-	__android_log_print(priority, "GemRB", "[%s/%s]: %s", msg.owner, log_level_text[msg.level], msg.message);
+	__android_log_print(priority, "GemRB", "[%s]: %s", msg.owner.c_str(), msg.message.c_str());
 }
 
 Logger::WriterPtr createAndroidLogger()

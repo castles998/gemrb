@@ -118,7 +118,8 @@ ELSE(APPLE)
 	ELSEIF(VITA)
 		ADD_EXECUTABLE(gemrb ${PLATFORM_DIR}/vita/GemRB.cpp ${PLATFORM_DIR}/vita/VitaLogger.cpp)
 	ELSEIF(ANDROID)
-		ADD_EXECUTABLE(gemrb ${PLATFORM_DIR}/android/GemRB.cpp ${PLATFORM_DIR}/android/AndroidLogger.cpp)
+		# Android port: SDLActivity loads SDL_main from a shared entry library.
+		ADD_LIBRARY(gemrb SHARED ${PLATFORM_DIR}/android/GemRB.cpp ${PLATFORM_DIR}/android/AndroidLogger.cpp)
 	ELSE(WIN32)
 		ADD_EXECUTABLE(gemrb GemRB.cpp )
 	ENDIF()
@@ -175,6 +176,12 @@ ELSE(APPLE)
     ENDIF (MSVC)
   endif (STATIC_LINK)
 ENDIF(APPLE)
+
+IF(ANDROID)
+  # Android port: SDL entry, logcat and legacy game encodings.
+  TARGET_LINK_LIBRARIES(gemrb ${SDL_LIBRARY} ${Iconv_LIBRARY} log)
+  TARGET_LINK_OPTIONS(gemrb PRIVATE "-Wl,--no-undefined")
+ENDIF()
 
 # preconfigure the sample config with the selected paths
 CONFIGURE_FILE(

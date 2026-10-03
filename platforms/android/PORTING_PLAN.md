@@ -1,7 +1,7 @@
 # Modern Android port plan
 
-Status: milestone 1 Python feasibility gate passed on a physical device. Native
-engine cross-build and APK packaging remain pending.
+Status: milestones 1 and 2 passed: Python device probe and ARM64 native engine
+cross-build. APK packaging and engine device startup remain pending.
 Baseline: GemRB master at `5552ade1d`. The existing Windows build lives in
 `build/windows-vs2022`.
 
@@ -97,6 +97,28 @@ Gate: engine and required plugins link for arm64-v8a with no host libraries or
 unresolved required symbols. Inspect ELF dependencies, ABI and native library
 alignment requirements. Rebuild Windows to catch shared CMake/API regressions.
 
+Progress (2026-10-03): `build-native.ps1` built `libgemrb.so` for arm64-v8a,
+API 26, with 41 static plugin archives and PIC core, whole-archive retention,
+Python 3.10.5 and linker `--no-undefined`. Android dependencies are SDL2 2.32.10,
+OpenAL Soft 1.22.2, GNU libiconv 1.17 and system zlib. SDL2 2.0.22 was tried but
+uses `ALooper_pollAll`, removed by NDK r27; the newer SDL is Android-only. GNU
+iconv is necessary because Android's system implementation lacks legacy game
+encodings. A Windows-host-compatible Android CMake wrapper builds its library
+sources without modifying them. Archive origins and checksums are pinned.
+
+ELF inspection confirms AArch64 shared libraries, unversioned SONAMEs, exported
+`SDL_main`, `PyInit_GemRB` and `PyInit__GemRB`, retained key plugin factories and
+static initialization code, and only expected Android system/package dependencies.
+New engine/SDL/OpenAL/iconv libraries have 16 KB LOAD alignment; prebuilt Python
+still has 4 KB alignment. Runtime plugin registration remains an APK startup
+test, not proven by symbol retention alone. `inspect-native.ps1` repeats ABI,
+dependency and export checks. No shared engine C++ changes were required: shared
+CMake changes are tagged and guarded with `if(ANDROID)`; the obsolete Android
+entry/logger were repaired in the platform directory. Windows ALL_BUILD succeeded
+and all seven CTest suites passed after the shared target changes. Optional PNG,
+FreeType, Vorbis, SDL_mixer and VLC remain disabled in this initial Android build.
+See `NATIVE_BUILD.md` for commands and dependency/runtime boundaries.
+
 ### 3. APK packaging and application startup
 
 Add a Gradle Android application using the SDL2 Java sources from exactly the same
@@ -156,8 +178,9 @@ registration and dependency loading can fail at runtime even after linking.
 Lifecycle, input and audio require device validation. This is multi-stage work;
 a credible time estimate follows the first Python and engine cross-build probes.
 
-Next implementation step: complete milestone 1 and report its results before
-expanding into launcher polish. Do not declare success based on a scaffold APK.
+Next implementation step: milestone 3, package the native engine with matching
+SDL Java glue and explicit Python/config/assets paths. Do not declare playable
+success based on compilation or a scaffold APK.
 
 ## Primary references
 
