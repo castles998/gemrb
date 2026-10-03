@@ -62,8 +62,14 @@ Progress (2026-10-03): desktop installed `patchlevel.h` confirms Python 3.10.5.
 Downloaded BeeWare's `3.10-b2` package and confirmed the same version in its
 headers, libraries for arm64-v8a/armeabi-v7a/x86_64, and ABI-specific standard
 library archives with encodings and native extension modules. Upstream specifies
-API 26 minimum. An isolated probe lives in `platforms/android/probe`; it has not
-been cross-compiled or executed yet. SDK license acceptance is pending. WSL is
+API 26 minimum. An isolated probe lives in `platforms/android/probe` and compiles
+and links for arm64-v8a and x86_64. SDK license acceptance was explicitly supplied
+by the user and recorded by sdkmanager. Installed locally: Temurin JDK
+17.0.20.1+1, SDK command-line tools 12.0, platform android-35, build-tools 35.0.0,
+NDK r27d (27.3.13750724), and platform-tools. Host CMake is 4.4.3; Ninja is 1.13.2.
+Device imports remain pending because no device is connected. The prebuilt
+Python ARM64 ELF uses 4 KB alignment; rebuild it for 16 KB device support before
+adopting it for those devices. WSL is
 not installed; no Linux host is currently required by this prebuilt approach.
 
 ### 2. Native engine cross-build
