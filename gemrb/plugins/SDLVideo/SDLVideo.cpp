@@ -278,8 +278,10 @@ void SDLVideoDriver::ProcessAxisMotion()
 	gamepadControl.lastAxisMovementTime = currentTime;
 
 	// 1) cursor movement
-	const int16_t xAxisLSign = (gamepadControl.xAxisLValue > gamepadControl.deadZoneL) - (gamepadControl.xAxisLValue < gamepadControl.deadZoneL);
-	const int16_t yAxisLSign = (gamepadControl.yAxisLValue > gamepadControl.deadZoneL) - (gamepadControl.yAxisLValue < gamepadControl.deadZoneL);
+	// Android port: a centered built-in controller must not overwrite touch position.
+	// Compare against the negative dead-zone boundary for negative movement.
+	const int16_t xAxisLSign = GamepadControl::AxisDirection(gamepadControl.xAxisLValue, gamepadControl.deadZoneL);
+	const int16_t yAxisLSign = GamepadControl::AxisDirection(gamepadControl.yAxisLValue, gamepadControl.deadZoneL);
 	if (xAxisLSign != 0 || yAxisLSign != 0) {
 		const float dtSeconds = deltaTime / 1000.f;
 		const auto xDelta = pow(abs(gamepadControl.xAxisLValue), gamepadControl.joyPointerAccel) * xAxisLSign * dtSeconds * gamepadControl.GetPointerSpeed();

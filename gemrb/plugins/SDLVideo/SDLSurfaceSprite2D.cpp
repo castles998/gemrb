@@ -302,7 +302,20 @@ Holder<Sprite2D> SDLTextureSprite2D::copy() const
 SDL_Texture* SDLTextureSprite2D::GetTexture(SDL_Renderer* renderer) const
 {
 	if (texture == nullptr) {
+	#if defined(__ANDROID__)
+		// Android port: GLES2's opaque BGRX -> RGBA target copy preserves X as
+		// alpha. Palette conversion can leave X=0, hiding terrain on composition.
+		// Explicit RGBA preserves palette/colorkey alpha on creation and refresh.
+		if (format.palette) {
+			SDL_Surface* rgba = SDL_ConvertSurfaceFormat(GetSurface(), SDL_PIXELFORMAT_RGBA32, 0);
+			texture = rgba ? SDL_CreateTextureFromSurface(renderer, rgba) : nullptr;
+			SDL_FreeSurface(rgba);
+		} else {
+			texture = SDL_CreateTextureFromSurface(renderer, GetSurface());
+		}
+	#else
 		texture = SDL_CreateTextureFromSurface(renderer, GetSurface());
+	#endif
 		SDL_QueryTexture(texture, &texFormat, nullptr, nullptr, nullptr);
 	} else if (staleTexture) {
 		SDL_Surface* surface = GetSurface();

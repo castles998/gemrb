@@ -881,6 +881,10 @@ int SDL20VideoDriver::ProcessEvent(const SDL_Event& event)
 				fingers[0].id = event.tfinger.fingerId;
 
 				e = EventMgr::CreateTouchEvent(fingers, 1, event.type == SDL_FINGERDOWN, event.tfinger.pressure);
+#if defined(__ANDROID__)
+				// Android port: continue stick movement from the last direct touch.
+				gamepadControl.SetGamepadPosition(e.touch.x, e.touch.y);
+#endif
 				e.mod = modstate;
 				EvntManager->DispatchEvent(std::move(e));
 			}
@@ -894,6 +898,12 @@ int SDL20VideoDriver::ProcessEvent(const SDL_Event& event)
 				Event touch = EventMgr::CreateTouchEvent(fingers, numf, true, event.tfinger.pressure);
 				// TODO: it may make more sense to calculate a pinch/rotation from screen center?
 				e = EventMgr::CreateTouchGesture(touch.touch, 0.0, 0.0);
+#if defined(__ANDROID__)
+				// Android port: keep touch dragging and controller cursor in sync.
+				if (numf == 1) {
+					gamepadControl.SetGamepadPosition(e.gesture.x, e.gesture.y);
+				}
+#endif
 				e.mod = modstate;
 				EvntManager->DispatchEvent(std::move(e));
 			}

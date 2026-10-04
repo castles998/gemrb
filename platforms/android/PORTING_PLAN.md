@@ -223,6 +223,39 @@ usable:
 - Provide a documented adb developer fallback, but do not make adb a prerequisite
   for players. Never delete the original game copy or existing saves implicitly.
 
+Game testing and first fixes (2026-10-03): the user confirmed BG2 menus, audible
+sound, touchscreen clicks and entering the starting dungeon. Two playability
+blockers were reproduced and fixed:
+
+- Cursor reset: `ProcessAxisMotion` compared negative movement against the
+  positive dead-zone boundary. A centered stick therefore emitted MouseMove at
+  the controller's initial (0,0) every frame on the Thor. Corrected the shared,
+  platform-independent comparison with a tagged, testable `AxisDirection` helper;
+  this is a controller correctness fix, not an Android-only behavior change.
+  Android-only touch handlers now synchronize the controller cursor with the last
+  touch/down/up/drag position. Direct touch still dispatches the existing down/up
+  click immediately; no move-first/second-tap interaction was introduced. Device
+  events showed identical (640,360) positions on touch down/up with no following
+  idle reset, and screenshots show the cursor staying where released.
+- Black terrain: tile palettes contained valid opaque colors. SDL 2.32.10 GLES2's
+  opaque BGRX/RGB888 source-to-RGBA render-target path propagated unused padding as
+  zero alpha; final composition then hid the terrain. This was not missing game
+  data or a brightness/global-tint problem. Android-only paletted sprite creation
+  now explicitly converts to RGBA before texture creation, preserving both opaque
+  and color-key alpha. An on-device test reproduced the old path's RGBA
+  `(90,140,200,0)` and verified `(90,140,200,255)` with the fix, on initial upload
+  and refresh. Transparent color-key pixels remain alpha zero. This regression
+  check is part of the no-game APK runtime diagnostic; temporary input/tile
+  logging was removed from normal gameplay.
+
+The existing auto-save loaded on the Thor and a screenshot confirms the dungeon
+floor/walls and actors render, with the cursor at the last touched position.
+Windows ALL_BUILD and all eight CTest suites passed, including three new
+controller dead-zone/position tests. APK asset tests/build and device runtime
+diagnostics passed. Manual save creation, sustained gameplay, physical controller
+interaction and lifecycle/rotation remain acceptance work; do not mark milestone
+4 complete based on this initial scene. Letterboxing was left unchanged.
+
 ### 5. Developer workflow and hardening
 
 Add VS Code tasks for configure, assemble, install and logcat. Document clean

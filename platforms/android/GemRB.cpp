@@ -4,6 +4,7 @@
 #include "Interface.h"
 #include "PluginMgr.h"
 
+#include "../../gemrb/plugins/SDLVideo/SDLSurfaceSprite2D.h"
 #include "Logging/Logging.h"
 
 #include <Python.h>
@@ -19,6 +20,61 @@ using namespace GemRB;
 extern "C" PyObject* PyInit_GemRB();
 extern "C" PyObject* PyInit__GemRB();
 
+// Exercise the engine's paletted sprite upload into an alpha-bearing game buffer.
+// Opaque RGBX textures can lose their padding/alpha in SDL's GLES2 target shader.
+static bool CheckTileAlpha(SDL_Renderer* renderer, bool colorKey)
+{
+	Palette::Colors colors;
+	colors.fill(Color(90, 140, 200, 255));
+	if (colorKey) colors[0] = ColorGreen;
+	auto palette = MakeHolder<Palette>();
+	palette->CopyColors(colors);
+	auto format = PixelFormat::Paletted8Bit(palette);
+	format.HasColorKey = colorKey;
+	format.ColorKey = 0;
+	SDLTextureSprite2D tile(Region(0, 0, 4, 4), format);
+	auto pixelsIn = static_cast<Uint8*>(tile.LockSprite());
+	std::memset(pixelsIn, 1, 16);
+	if (colorKey) pixelsIn[0] = 0;
+	tile.UnlockSprite();
+	SDL_Texture* target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 4, 4);
+	if (!target) return false;
+	bool passed = true;
+	for (int refresh = -1; refresh < 2; ++refresh) {
+		if (refresh > 0) {
+			tile.LockSprite();
+			tile.UnlockSprite();
+		}
+		tile.PrepareForRendering(BlitFlags::NONE);
+		SDL_Texture* texture = refresh < 0 ? SDL_CreateTextureFromSurface(renderer, tile.GetSurface()) : tile.GetTexture(renderer);
+		Uint8 pixels[64] = {};
+		int result = SDL_SetRenderTarget(renderer, target);
+		result |= SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
+		result |= SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+		result |= SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGBA32, pixels, 16);
+		Uint32 textureFormat = 0;
+		SDL_QueryTexture(texture, &textureFormat, nullptr, nullptr, nullptr);
+		__android_log_print(ANDROID_LOG_INFO, "GemRB", "ANDROID_TILE_ALPHA_PROBE colorkey=%d refresh=%d format=%s rgba=%u,%u,%u,%u result=%d",
+				    colorKey, refresh, SDL_GetPixelFormatName(textureFormat), pixels[0], pixels[1], pixels[2], pixels[3], result);
+		if (refresh < 0) {
+			SDL_DestroyTexture(texture);
+		} else {
+			passed &= result == 0;
+			for (int pixel = 0; pixel < 16; ++pixel) {
+				const Uint8* rgba = pixels + pixel * 4;
+				if (colorKey && pixel == 0) {
+					passed &= rgba[3] == 0;
+				} else {
+					passed &= rgba[0] == 90 && rgba[1] == 140 && rgba[2] == 200 && rgba[3] == 255;
+				}
+			}
+		}
+	}
+	SDL_SetRenderTarget(renderer, nullptr);
+	SDL_DestroyTexture(target);
+	return passed;
+}
+
 // A packaging diagnostic, deliberately separate from game/GUI initialization.
 // GUIClasses and Main need a live Interface and are tested with game data later.
 static int RuntimeCheck()
@@ -33,6 +89,7 @@ static int RuntimeCheck()
 		if (window) renderer = SDL_CreateRenderer(window, -1, 0);
 	}
 	auto mgr = PluginMgr::Get();
+	bool tileAlpha = renderer && CheckTileAlpha(renderer, false) && CheckTileAlpha(renderer, true);
 	bool plugins = mgr->IsAvailable(IE_GUI_SCRIPT_CLASS_ID) && mgr->IsAvailable(IE_BIF_CLASS_ID);
 	if (renderer && plugins &&
 	    PyImport_AppendInittab("GemRB", PyInit_GemRB) == 0 &&
@@ -44,13 +101,15 @@ static int RuntimeCheck()
 				 "assert sys.version_info[:3] == (3, 10, 5)\n"
 				 "assert callable(GemRB.GetView) and callable(_GemRB.Table_GetValue)\n"
 				 "assert zlib.decompress(zlib.compress(b'GemRB Android')) == b'GemRB Android'\n") == 0;
+		passed &= tileAlpha;
 		if (passed) {
 			report = fmt::format("ANDROID_APK_RUNTIME_OK\nPython: {}\nRegistered class plugins: {}\n"
 					     "SDL video/rendering and GemRB/_GemRB, GUIDefines, MetaClasses imports passed.\n"
+					     "Paletted tile opaque/color-key alpha passed on initial upload and refresh.\n"
 					     "Game initialization, GUIClasses, audio playback and gameplay are not tested.\n",
 					     Py_GetVersion(), mgr->GetPluginCount());
 		} else {
-			report = "ANDROID_APK_RUNTIME_FAILED: Python imports failed; inspect logcat traceback.\n";
+			report = "ANDROID_APK_RUNTIME_FAILED: Python imports or opaque tile alpha failed; inspect logcat.\n";
 		}
 		Py_FinalizeEx();
 	} else {

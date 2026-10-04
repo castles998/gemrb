@@ -40,6 +40,11 @@ a green frame, returns to the launcher, and shows the diagnostic summary.
 The diagnostic checks SDL video/renderer creation, static class-plugin registration,
 Python 3.10.5, native extension imports (including ssl, ctypes, sqlite3 and zlib),
 GemRB/_GemRB bindings, and game-independent GUI modules GUIDefines and MetaClasses.
+It also checks the engine's paletted sprite uploads into an RGBA render target:
+opaque pixels must retain alpha 255 and color-key pixels alpha 0, both on initial
+upload and refresh. Logcat's `ANDROID_TILE_ALPHA_PROBE` also records the raw SDL
+opaque-texture path for comparison; a zero alpha there is the known GLES2 issue,
+not a failed test of the corrected engine path.
 It does **not** call the game's GUI initialization, import GUIClasses/GameCheck
 (which need a live engine), play audio, or start gameplay. Those require game data
 and milestone 4 validation. Library loading alone is not playable validation.

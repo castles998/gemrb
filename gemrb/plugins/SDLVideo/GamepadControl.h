@@ -41,6 +41,12 @@ public:
 	float GetPointerSpeed() const;
 	void SetGamepadPosition(int x, int y);
 	void HandleAxisEvent(uint8_t axis, int16_t value);
+
+	// Android port: shared, testable dead-zone calculation for built-in controllers.
+	static int AxisDirection(int16_t value, int16_t deadZone)
+	{
+		return (value > deadZone) - (value < -deadZone);
+	}
 };
 
 #endif

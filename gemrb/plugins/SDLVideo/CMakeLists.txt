@@ -46,3 +46,6 @@ ELSE()
 	ADD_GEMRB_PLUGIN (SDLVideo ${COMMON_FILES} SDL12Video.cpp)
 	TARGET_LINK_LIBRARIES(SDLVideo ${SDL_LIBRARY} Threads::Threads ${COCOA_LIBRARY_PATH})
 ENDIF()
+
+# Android port: regression coverage for the controller bug exposed by direct touch.
+ADD_GEMRB_PLUGIN_TEST(SDLVideo GamepadControl.cpp ../../tests/SDLVideo/Test_GamepadControl.cpp)
